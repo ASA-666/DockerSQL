@@ -27,3 +27,8 @@
 # Docker local/runtime artifacts
 docker-compose.override.yml
 
+# Prompt
+prompt.md
+
+# Testing
+test.sql

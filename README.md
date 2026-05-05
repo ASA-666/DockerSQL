@@ -16,7 +16,7 @@ A simple CLI wrapper for managing a MySQL + phpMyAdmin Docker setup.
 ### 1. Clone the repo
 
 ```bash
-git clone https://github.com/yourusername/dockersql.git
+git clone https://github.com/ASA-666/DockerSQL.git
 cd dockersql
 ```
 
@@ -36,16 +36,18 @@ After this, you can run `dockersql` from anywhere.
 
 ### Commands and switches
 
-| Command                    | Description                |
-| -------------------------- | -------------------------- |
-| `dockersql -start`         | Start MySQL only           |
-| `dockersql -start --web`   | Start MySQL + phpMyAdmin   |
-| `dockersql -restart`       | Restart MySQL only         |
-| `dockersql -restart --web` | Restart MySQL + phpMyAdmin |
-| `dockersql -stop`          | Stop all containers        |
-| `dockersql -status`        | Show container status      |
-| `dockersql -logs`          | Show logs                  |
-| `dockersql`                | Open MySQL CLI             |
+| Command                                           | Description                 |
+| ------------------------------------------------- | --------------------------- |
+| `dockersql -help` / `dockersql --help`            | Show usage and command help |
+| `dockersql -start`                                | Start MySQL only            |
+| `dockersql -start --web`                          | Start MySQL + phpMyAdmin    |
+| `dockersql -restart`                              | Restart MySQL only          |
+| `dockersql -restart --web`                        | Restart MySQL + phpMyAdmin  |
+| `dockersql -stop`                                 | Stop all containers         |
+| `dockersql -status`                               | Show container status       |
+| `dockersql -logs`                                 | Show logs                   |
+| `dockersql`                                       | Open MySQL CLI              |
+| `dockersql -f <path>` / `dockersql --file <path>` | Run a SQL file in MySQL     |
 
 ### Quick examples
 
@@ -57,5 +59,9 @@ dockersql -restart --web
 dockersql -stop
 dockersql -status
 dockersql -logs
+dockersql -help
+dockersql --help
+dockersql -f ./test.sql
+dockersql --file /absolute/path/to/file.sql
 dockersql
 ```

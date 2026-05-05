@@ -12,18 +12,83 @@ RESTART=false
 STATUS=false
 LOGS=false
 WEB=false
+HELP=false
+SQL_FILE=""
 
-for arg in "$@"
-do
-  case $arg in
+while [[ $# -gt 0 ]]; do
+  case "$1" in
     -start) START=true ;;
     -stop) STOP=true ;;
     -restart) RESTART=true ;;
     -status) STATUS=true ;;
     -logs) LOGS=true ;;
     --web) WEB=true ;;
+    -help|--help) HELP=true ;;
+    -f|--file)
+      if [[ -z "${2:-}" ]]; then
+        echo "Error: missing file path for $1"
+        exit 1
+      fi
+      SQL_FILE="$2"
+      shift
+      ;;
   esac
+  shift
 done
+
+print_help() {
+  cat <<EOF
+Usage:
+  dockersql [command]
+
+Commands:
+  dockersql -start            Start MySQL only
+  dockersql -start --web      Start MySQL + phpMyAdmin
+  dockersql -restart          Restart MySQL only
+  dockersql -restart --web    Restart MySQL + phpMyAdmin
+  dockersql -stop             Stop all containers
+  dockersql -status           Show container status
+  dockersql -logs             Show logs
+  dockersql                   Open MySQL CLI
+  dockersql -f <path>         Run a .sql file in MySQL
+
+Options:
+  -help, --help               Show this help message
+  -f, --file <path>           Execute a SQL file
+  --web                       Start or restart phpMyAdmin too
+
+Examples:
+  dockersql -start
+  dockersql -start --web
+  dockersql -f ./schema.sql
+  dockersql --file /absolute/path/to/data.sql
+EOF
+}
+
+if $HELP; then
+  print_help
+  exit 0
+fi
+
+if [[ -n "$SQL_FILE" ]]; then
+  if [[ ! -f "$SQL_FILE" ]]; then
+    echo "Error: SQL file not found: $SQL_FILE"
+    exit 1
+  fi
+
+  if ! docker ps --format '{{.Names}}' | grep -q "^${MYSQL_CONTAINER}$"; then
+    echo "MySQL is not running. Use: dockersql -start"
+    exit 1
+  fi
+
+  MYSQL_USER=$(grep MYSQL_USER "$ENV_FILE" | cut -d '=' -f2)
+  MYSQL_PASSWORD=$(grep MYSQL_PASSWORD "$ENV_FILE" | cut -d '=' -f2)
+  MYSQL_DATABASE=$(grep MYSQL_DATABASE "$ENV_FILE" | cut -d '=' -f2)
+
+  echo "Running SQL file: $SQL_FILE"
+  docker exec -i "$MYSQL_CONTAINER" mysql -u "$MYSQL_USER" -p"$MYSQL_PASSWORD" "$MYSQL_DATABASE" < "$SQL_FILE"
+  exit $?
+fi
 
 # STOP
 if $STOP; then

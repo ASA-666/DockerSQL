@@ -1,0 +1,79 @@
+#!/bin/zsh
+
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+COMPOSE_FILE="$SCRIPT_DIR/docker-compose.yml"
+ENV_FILE="$SCRIPT_DIR/.env"
+
+MYSQL_CONTAINER=$(grep MYSQL_CONTAINER "$ENV_FILE" | cut -d '=' -f2)
+
+START=false
+STOP=false
+RESTART=false
+STATUS=false
+LOGS=false
+WEB=false
+
+for arg in "$@"
+do
+  case $arg in
+    -start) START=true ;;
+    -stop) STOP=true ;;
+    -restart) RESTART=true ;;
+    -status) STATUS=true ;;
+    -logs) LOGS=true ;;
+    --web) WEB=true ;;
+  esac
+done
+
+# STOP
+if $STOP; then
+  docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" down
+  exit 0
+fi
+
+# RESTART
+if $RESTART; then
+  docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" down
+  if $WEB; then
+    docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" up -d
+    echo "phpMyAdmin: http://localhost:8080"
+  else
+    docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" up -d db
+  fi
+  exit 0
+fi
+
+# START
+if $START; then
+  if $WEB; then
+    docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" up -d
+    echo "phpMyAdmin: http://localhost:8080"
+  else
+    docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" up -d db
+  fi
+  exit 0
+fi
+
+# STATUS
+if $STATUS; then
+  docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" ps
+  exit 0
+fi
+
+# LOGS
+if $LOGS; then
+  docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" logs -f
+  exit 0
+fi
+
+# DEFAULT → CLI
+if ! docker ps --format '{{.Names}}' | grep -q "^${MYSQL_CONTAINER}$"; then
+  echo "MySQL is not running. Use: dockersql -start"
+  exit 1
+fi
+
+MYSQL_USER=$(grep MYSQL_USER "$ENV_FILE" | cut -d '=' -f2)
+MYSQL_PASSWORD=$(grep MYSQL_PASSWORD "$ENV_FILE" | cut -d '=' -f2)
+
+docker exec -it "$MYSQL_CONTAINER" mysql -u "$MYSQL_USER" -p"$MYSQL_PASSWORD"
+
